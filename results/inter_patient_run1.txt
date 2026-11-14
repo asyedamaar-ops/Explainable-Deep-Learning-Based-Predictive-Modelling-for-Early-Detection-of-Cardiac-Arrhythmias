@@ -1,0 +1,43 @@
+Inter-patient (DS1/DS2) evaluation, run 1
+Notebook: inter_patient_evaluation.ipynb, seed 42
+Run on Kaggle, 14 November 2026, GPU T4 x2, TensorFlow 2.21.0, 1248 s in total
+Copied from the Kaggle run log.
+
+Train (DS1): (50989, 187) | Test (DS2): (49678, 187)
+Q beats skipped: 8 in DS1, 7 in DS2
+
+Class                 DS1 train   DS2 test
+Normal                    45843      44232
+Supraventricular            943       1837
+Ventricular                3788       3221
+Fusion                      415        388
+
+=== CNN baseline on DS2 (unseen patients) ===        (best epoch 35, stopped at 42)
+                  precision    recall  f1-score   support
+Normal               0.9595    0.8188    0.8836     44232
+Supraventricular     0.0461    0.0544    0.0499      1837
+Ventricular          0.4102    0.8699    0.5575      3221
+Fusion               0.0024    0.0180    0.0042       388
+accuracy                                 0.7876     49678
+macro avg            0.3545    0.4403    0.3738     49678
+weighted avg         0.8826    0.7876    0.8248     49678
+
+=== DenseNet on DS2 (unseen patients) ===            (best epoch 40, stopped at 47)
+                  precision    recall  f1-score   support
+Normal               0.9492    0.8410    0.8918     44232
+Supraventricular     0.0901    0.0719    0.0800      1837
+Ventricular          0.4640    0.8938    0.6109      3221
+Fusion               0.0007    0.0052    0.0012       388
+accuracy                                 0.8094     49678
+macro avg            0.3760    0.4529    0.3960     49678
+weighted avg         0.8786    0.8094    0.8366     49678
+
+=== DenseNet + attention on DS2 (unseen patients) === (best epoch 41, stopped at 48)
+                  precision    recall  f1-score   support
+Normal               0.9451    0.8337    0.8859     44232
+Supraventricular     0.0367    0.0343    0.0354      1837
+Ventricular          0.4966    0.8755    0.6337      3221
+Fusion               0.0012    0.0103    0.0022       388
+accuracy                                 0.8004     49678
+macro avg            0.3699    0.4385    0.3893     49678
+weighted avg         0.8751    0.8004    0.8312     49678
