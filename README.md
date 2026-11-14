@@ -1,9 +1,26 @@
-# Cardiac Arrhythmia Classification on MIT-BIH (CNN, DenseNet, Multi-Scale Attention, Grad-CAM)
+# Explainable Cardiac Arrhythmia Detection
 
-Five-class heartbeat classification on the MIT-BIH arrhythmia data (Kaggle `shayanfazeli/heartbeat`). Three 1D models are trained and compared over two runs, and Grad-CAM is used to look at where a model attends along the beat.
+**Three 1D deep-learning models compared on 109,446 MIT-BIH heartbeats, with Grad-CAM to show where the model looks, and an honest account of what the numbers do not prove.**
 
-![Python](https://img.shields.io/badge/Python-3.10-3776AB?style=flat-square&logo=python&logoColor=white)
-![TensorFlow](https://img.shields.io/badge/TensorFlow-Keras-FF6F00?style=flat-square&logo=tensorflow&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3.12-3776AB?style=flat-square&logo=python&logoColor=white)
+![TensorFlow](https://img.shields.io/badge/TensorFlow-2.19-FF6F00?style=flat-square&logo=tensorflow&logoColor=white)
+![Dataset](https://img.shields.io/badge/Data-MIT--BIH-0B7285?style=flat-square)
+
+Five-class heartbeat classification on the MIT-BIH arrhythmia data (Kaggle `shayanfazeli/heartbeat`). A CNN, a DenseNet and a DenseNet with multi-scale attention are trained and compared over two runs, and Grad-CAM is used to look at where a model attends along the beat.
+
+Headline result: all three models reach 97.9 to 98.7% accuracy and 0.90 to 0.92 macro F1, but their ranking changes between runs and the split is by beat, so the larger models are not clearly better than the plain CNN.
+
+![Sample beats of the five classes](figures/sample_beats.png)
+
+## Project and my contribution
+
+Minor project at SRM Institute of Science and Technology (January to May 2026), done in a team of 2 with a faculty mentor.
+
+My part:
+
+- **Data:** dataset handling and preprocessing, including the class-imbalance handling.
+- **Training pipeline:** training and debugging the models.
+- **Explainability:** the Grad-CAM visualisation and region analysis.
 
 ## Dataset
 
@@ -30,6 +47,8 @@ The whole pipeline was run twice with different random initialisation. Both runs
 | CNN baseline | 98.19% / 97.93% | 0.910 / 0.903 | 0.814 / 0.808 |
 | DenseNet with transition layers | 98.66% / 98.34% | 0.923 / 0.911 | 0.807 / 0.788 |
 | DenseNet + multi-scale attention | 98.44% / 98.46% | 0.915 / 0.909 | 0.788 / 0.771 |
+
+![F1 score per class for the three models, run 2](figures/model_comparison.png)
 
 What this shows:
 - The DenseNet had the best macro F1 in both runs, by about 0.7 to 1.3 points over the CNN.
@@ -59,6 +78,8 @@ Mean Grad-CAM attention (%) per approximate region, averaged over up to 200 corr
 | Fusion | 5.2 | 52.3 | 24.2 | 16.7 | 134 / 137 |
 | Unknown | 13.6 | 33.2 | 16.0 | 17.2 | 185 / 200 |
 
+![Grad-CAM example beats](figures/gradcam_examples.png)
+
 How to read it:
 - Normal beats are dominated by the QRS region. Fusion beats put most attention on the ST segment.
 - Ventricular attention is spread across the QRS, T-wave and late-beat regions, and Supraventricular attention is diffuse. These do not give a clean clinical story, so this table should not be read as proof that the model uses clinically correct features.
@@ -67,16 +88,23 @@ How to read it:
 ## Limitations
 
 - **The split is by beat, not by patient.** The Kaggle train and test files mix beats from the same recordings, so a patient's beats can appear on both sides. This probably inflates the accuracy. A patient-wise split (for example the DS1/DS2 protocol) is the proper test.
+- **A patient-wise evaluation is the next step.** It needs the raw PhysioNet records, because the Kaggle files carry no patient IDs. No patient-wise results are claimed here.
 - **Only two runs per model.** That is enough to see that the ranking is unstable, but not to put confidence intervals on the differences.
 - **Grad-CAM regions are approximate** (see above), and the Grad-CAM table is for one selected model in one run.
 - **An early version of the region analysis was wrong.** It used boundaries meant for a window centred on the R-peak and a single beat per class. Both were fixed in the final notebook.
 - **No ablation.** An earlier ablation attempt crashed and was removed, so no ablation results are claimed.
 - **Research code, not a diagnostic tool.**
 
+## Training curves
+
+![Training and validation curves](figures/training_curves.png)
+
 ## Run it
 
-1. Open `explainable-deep-learning-based-predictive-modelli.ipynb` in Kaggle with a GPU and add the dataset `shayanfazeli/heartbeat`.
+1. Open `cardiac_arrhythmia_classification.ipynb` in Kaggle with a GPU and add the dataset `shayanfazeli/heartbeat`.
 2. Run all cells. Training the three models takes the longest.
+
+The notebook in this repository is saved with its outputs (run 2), so every number and figure above can be checked without running it. To run it outside Kaggle, install `requirements.txt` and change the two CSV paths in the data-loading cell.
 
 ## Tech stack
 
