@@ -8,7 +8,7 @@
 
 Five-class heartbeat classification on the MIT-BIH arrhythmia data (Kaggle `shayanfazeli/heartbeat`). A CNN, a DenseNet and a DenseNet with multi-scale attention are trained and compared over two runs, and Grad-CAM is used to look at where a model attends along the beat.
 
-Headline result: with the usual by-beat split, all three models reach 97.9 to 98.7% accuracy and 0.90 to 0.92 macro F1. On a patient-wise split (unseen patients) the same models reach 79 to 81% accuracy and 0.37 to 0.40 macro F1. The by-beat numbers are therefore far too optimistic, and the larger models are not clearly better than the plain CNN in either setting.
+Headline result: with the usual by-beat split, all three models reach 97.9 to 98.7% accuracy and 0.90 to 0.92 macro F1. Holding the data, models and settings fixed and changing only the split to patient-wise drops macro F1 to 0.38 to 0.43 (5 seeds). Most of the headline figure therefore comes from having the same patients in train and test, and the larger models are not clearly better than the plain CNN in either setting.
 
 ![Sample beats of the five classes](figures/sample_beats.png)
 
@@ -66,38 +66,50 @@ Run 2 per-class sensitivity and PPV (Supraventricular and Ventricular are the hi
 
 In run 2 the clinical priority score selected the **CNN baseline** (0.916) for Grad-CAM, ahead of the DenseNet (0.911) and the attention model (0.900).
 
-## Patient-wise evaluation (DS1 / DS2)
+## Patient-wise evaluation: how much does the split matter?
 
-The results above use a by-beat split. To see how much that split helps, I repeated the comparison with the patient-wise DS1 / DS2 protocol of de Chazal et al. (2004): 22 recordings for training and 22 different recordings for testing, so no patient is on both sides. Notebook: `inter_patient_evaluation.ipynb`. Full report: `results/inter_patient_run1.txt`.
+The results above use a by-beat split, where beats of the same patient appear in both train and test. To measure what that is worth, I re-ran the whole comparison with **everything held fixed except the split**: the same beats (cut from the raw PhysioNet records, 4 AAMI classes, paced recordings excluded), the same three models, the same augmentation, class weights and training settings, and the same train / validation / test sizes.
 
-| Model | By-beat accuracy | By-beat macro F1 | Patient-wise accuracy | Patient-wise macro F1 |
+| | Train | Validation | Test |
+|---|---|---|---|
+| Patient-wise | 17 DS1 recordings | 5 other DS1 recordings | 22 DS2 recordings |
+| By-beat | random beats from all 44 recordings | random beats | random beats |
+
+Each setting was run with 5 seeds. Notebook: `inter_patient_multi_seed.ipynb`. Full numbers: `results/multi_seed_README.txt`, `results/multi_seed_all_runs.csv`, `results/multi_seed_per_class.csv`.
+
+**Mean ± standard deviation over 5 seeds**
+
+| Model | By-beat accuracy | Patient-wise accuracy | By-beat macro F1 | Patient-wise macro F1 |
 |---|---|---|---|---|
-| CNN baseline | 97.93% | 0.903 | 78.76% | 0.374 |
-| DenseNet | 98.34% | 0.911 | 80.94% | 0.396 |
-| DenseNet + attention | 98.46% | 0.909 | 80.04% | 0.389 |
+| CNN baseline | 0.9849 ± 0.0009 | 0.8202 ± 0.0226 | 0.903 ± 0.006 | 0.417 ± 0.026 |
+| DenseNet | 0.9829 ± 0.0032 | 0.8230 ± 0.0247 | 0.896 ± 0.014 | 0.382 ± 0.022 |
+| DenseNet + attention | 0.9833 ± 0.0031 | 0.8617 ± 0.0315 | 0.894 ± 0.013 | 0.435 ± 0.020 |
 
-Patient-wise F1 per class (49,678 test beats):
+**F1 per class (mean over 5 seeds)**
 
-| Class | Test beats | CNN | DenseNet | DenseNet + attention |
-|---|---|---|---|---|
-| Normal | 44,232 | 0.884 | 0.892 | 0.886 |
-| Supraventricular | 1,837 | 0.050 | 0.080 | 0.035 |
-| Ventricular | 3,221 | 0.558 | 0.611 | 0.634 |
-| Fusion | 388 | 0.004 | 0.001 | 0.002 |
+| Class | Test beats | By-beat | Patient-wise |
+|---|---|---|---|
+| Normal | 44,232 | 0.99 | 0.90 to 0.92 |
+| Ventricular | 3,221 | 0.96 to 0.97 | 0.57 to 0.69 |
+| Supraventricular | 1,837 | 0.81 to 0.83 | 0.06 to 0.12 |
+| Fusion | 388 | 0.81 to 0.82 | 0.00 to 0.04 |
 
-What this shows:
+Ranges are across the three models.
 
-- **The by-beat split inflated the results a lot.** On unseen patients, macro F1 falls from about 0.90 to about 0.39.
-- Ventricular beats are still found (recall 0.87 to 0.89), but with many false alarms (precision 0.41 to 0.50).
-- Supraventricular and Fusion beats are essentially not detected on unseen patients.
-- Validation accuracy still reached about 99% during training, because the validation beats come from the training patients. A by-beat validation set cannot warn about this.
-- As before, the larger models are not clearly better than the CNN.
+**What this shows**
 
-How to read the comparison:
+- **Changing only the split drops macro F1 from about 0.90 to about 0.41.** The gap of roughly 0.49 is far larger than the spread between seeds (0.01 to 0.03), so it is not noise.
+- **Most of the 98% headline figure comes from having the same patients on both sides.** The model partly recognises a patient's beat shape rather than the arrhythmia.
+- **Ventricular beats still transfer** to unseen patients (recall about 0.85), but with many false alarms (precision 0.43 to 0.58).
+- **Supraventricular and Fusion beats essentially do not transfer** (F1 below 0.12).
+- **Validation does not warn you.** Validation accuracy stayed at 94 to 95% even on 5 held-out recordings, while test accuracy on the 22 DS2 recordings was 82 to 86%.
+- **No model is clearly better.** The attention model leads patient-wise by 0.02 to 0.05 macro F1, which is one to two standard deviations.
 
-- It is **not like for like**. The patient-wise run has 4 classes (the paced recordings are excluded, which removes almost all Unknown beats) and cuts the beats from the cardiologist annotations. The by-beat run has 5 classes and uses the Kaggle preprocessing. Read the gap as an indication, not an exact measurement.
-- It is **one run** (seed 42).
-- A single-beat window carries no rhythm timing. Supraventricular beats are mostly recognised by arriving early, so part of that weak score may come from the input and not only from the split. This was not tested.
+**Limits of this experiment**
+
+- Fusion has only 20 validation beats and 388 test beats, so its scores are unstable.
+- A single-beat window carries no rhythm timing, and supraventricular beats are mostly recognised by arriving early. Part of that weak score may come from the input rather than the split. This was not tested. Adding R-R interval features is the obvious next step.
+- A single earlier run with validation taken from the training patients is kept in `inter_patient_evaluation.ipynb` and `results/inter_patient_run1.txt`.
 
 ## Grad-CAM attention by region (run 2, CNN baseline)
 
@@ -121,7 +133,7 @@ How to read it:
 ## Limitations
 
 - **The split is by beat, not by patient.** The Kaggle train and test files mix beats from the same recordings, so a patient's beats can appear on both sides. This probably inflates the accuracy. A patient-wise split (for example the DS1/DS2 protocol) is the proper test.
-- **The patient-wise run is a single run with different preprocessing.** See the section above. Repeating it with more seeds and adding R-R interval features is the next step.
+- **Why supraventricular beats fail on unseen patients is untested.** See the section above. Adding R-R interval features is the next step.
 - **Only two runs per model.** That is enough to see that the ranking is unstable, but not to put confidence intervals on the differences.
 - **Grad-CAM regions are approximate** (see above), and the Grad-CAM table is for one selected model in one run.
 - **An early version of the region analysis was wrong.** It used boundaries meant for a window centred on the R-peak and a single beat per class. Both were fixed in the final notebook.
@@ -137,7 +149,7 @@ How to read it:
 1. Open `cardiac_arrhythmia_classification.ipynb` in Kaggle with a GPU and add the dataset `shayanfazeli/heartbeat`.
 2. Run all cells. Training the three models takes the longest.
 
-The main notebook is saved with its outputs (run 2), so its numbers and figures can be checked without running it. `inter_patient_evaluation.ipynb` is saved without outputs. Its run log is in `results/inter_patient_run1.txt`. To repeat it, run it on Kaggle with the GPU and Internet on, because it downloads the records from PhysioNet. To run it outside Kaggle, install `requirements.txt` and change the two CSV paths in the data-loading cell.
+The main notebook is saved with its outputs (run 2), so its numbers and figures can be checked without running it. The two patient-wise notebooks are saved without outputs, and their logs and result tables are in `results/`. To repeat them, run on Kaggle with the GPU and Internet on, because the records are downloaded from PhysioNet. To run it outside Kaggle, install `requirements.txt` and change the two CSV paths in the data-loading cell.
 
 ## Tech stack
 
