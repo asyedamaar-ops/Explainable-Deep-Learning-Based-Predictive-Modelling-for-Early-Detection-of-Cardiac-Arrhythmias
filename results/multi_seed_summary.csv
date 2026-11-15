@@ -1,0 +1,7 @@
+split,model,accuracy_mean,macro_f1_mean,best_val_accuracy_mean,accuracy_std,macro_f1_std,best_val_accuracy_std
+by-beat,CNN baseline,0.9849,0.9034,0.9853,0.0009,0.0061,0.001
+by-beat,DenseNet,0.9829,0.8956,0.9837,0.0032,0.0143,0.003
+by-beat,DenseNet + attention,0.9833,0.894,0.9834,0.0031,0.0128,0.0042
+patient-wise,CNN baseline,0.8202,0.4167,0.9379,0.0226,0.0257,0.0131
+patient-wise,DenseNet,0.823,0.3824,0.9499,0.0247,0.0224,0.0035
+patient-wise,DenseNet + attention,0.8617,0.4348,0.9476,0.0315,0.0195,0.0032
